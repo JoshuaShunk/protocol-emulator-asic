@@ -1,0 +1,19 @@
+[options]
+mode bmc
+multiclock on
+depth 360
+expect pass,fail
+
+[engines]
+smtbmc bitwuzla
+
+[script]
+read_verilog -sv -formal test_eq.sv
+read_rtlil mutated.il
+prep -top miter
+flatten
+opt -fast
+
+[files]
+test_eq.sv
+mutated.il

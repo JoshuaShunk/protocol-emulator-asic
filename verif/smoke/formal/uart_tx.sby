@@ -1,0 +1,22 @@
+[tasks]
+prove
+cover
+
+[options]
+prove: mode prove
+cover: mode cover
+cover: depth 200
+
+[engines]
+prove: abc pdr
+cover: smtbmc bitwuzla
+
+[script]
+read_verilog -formal uart_tx.v
+read_verilog -sv -formal uart_tx_props.sv
+prep -top uart_tx_props
+async2sync
+
+[files]
+../uart_tx.v
+uart_tx_props.sv

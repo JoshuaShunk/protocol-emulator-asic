@@ -1,0 +1,39 @@
+[options]
+size 300
+tags COVERED UNCOVERED NOCHANGE EQGAP PROBE
+
+[script]
+read_verilog ../uart_tx.v
+prep -top uart_tx
+
+[files]
+../uart_tx.v
+
+[logic]
+# Equivalence check: every surviving mutant, plus 10% of killed ones.
+if result("test_sim") == "FAIL":
+    tag("COVERED")
+    if rng(100) < 10:
+        tag("PROBE")
+        if result("test_eq") == "PASS":
+            tag("EQGAP")
+    return
+
+if result("test_eq") == "FAIL":
+    tag("UNCOVERED")
+else:
+    tag("NOCHANGE")
+
+[report]
+if tags("EQGAP"):
+    print("Found %d killed mutations that are formally equivalent (simulation false alarms)!" % tags("EQGAP"))
+if tags("COVERED")+tags("UNCOVERED"):
+    print("Coverage: %.2f%%" % (100.0*tags("COVERED")/(tags("COVERED")+tags("UNCOVERED"))))
+
+[test test_sim]
+expect PASS FAIL
+run bash $PRJDIR/test_sim.sh
+
+[test test_eq]
+expect PASS FAIL
+run bash $PRJDIR/test_eq.sh
