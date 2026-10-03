@@ -20,11 +20,11 @@ Tests are written from the specification and datasheets before the RTL.
 
 | Gate | Tool | Pass condition |
 |------|------|----------------|
-| Simulation | cocotb 2.0.1, Icarus 13.0, `verif/preflight.py` | All tests pass against both reference checks; `verif/check_results.py` requires at least one test case |
+| Simulation | cocotb 2.0.1, Icarus 13.0, `verif/preflight.py` | All tests pass against both reference checks; every test has a simulation-time limit; `verif/check_results.py` requires at least one test case |
 | Test strength | MCY (`verif/*/mutation/run.sh`) | Unmutated design passes, no ERROR results, mutation coverage at or above the agreed threshold |
 | Timing contract | SymbiYosys | Properties proved (`mode prove`), every property has a reachable cover, a planted bug makes the proof fail |
 | Timing refactors | EQY | Optimised RTL is equivalent to the last verified RTL |
-| Physical | `tools/harden.sh`, CI | Hardens at 6x4 with no DRC/LVS errors; cells, utilisation and WNS recorded in `docs/spec/area-budget.md` |
+| Physical | `tools/harden.sh`, CI | Hardens at 8x4 and in the 6x4 configuration with no DRC/LVS errors; cells, utilisation and WNS recorded in `docs/spec/area-budget.md` |
 
 ## Formal tool limits
 

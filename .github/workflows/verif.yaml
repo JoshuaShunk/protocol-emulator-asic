@@ -1,0 +1,73 @@
+name: verif
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  verif:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Cache Icarus Verilog 13.0
+        id: icarus
+        uses: actions/cache@v4
+        with:
+          path: ~/icarus
+          key: icarus-v13_0-ubuntu-24.04
+
+      - name: Build Icarus Verilog 13.0
+        if: steps.icarus.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf gperf flex bison g++ make
+          git clone --depth 1 -b v13_0 https://github.com/steveicarus/iverilog /tmp/iverilog
+          cd /tmp/iverilog
+          sh autoconf.sh
+          ./configure --prefix="$HOME/icarus"
+          make -j"$(nproc)"
+          make install
+
+      - name: Install sigrok-cli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sigrok-cli
+
+      - name: Set up OSS CAD Suite
+        uses: YosysHQ/setup-oss-cad-suite@v4
+        with:
+          version: '2026-10-02'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Python packages
+        run: pip install -r test/requirements.txt
+
+      - name: Put Icarus Verilog 13.0 first on PATH
+        run: echo "$HOME/icarus/bin" >> "$GITHUB_PATH"
+
+      - name: Preflight
+        run: python verif/preflight.py
+
+      - name: Checker unit tests
+        run: python -m pytest -q verif/lib
+
+      - name: Simulation suites
+        run: python -m verif.run
+
+      - name: Formal
+        run: |
+          cd verif/smoke/formal
+          sby -f uart_tx.sby
+
+      - name: Upload simulation output
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sim_build
+          path: sim_build

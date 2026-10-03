@@ -11,7 +11,7 @@ python "$PRJDIR/../../preflight.py" || { echo "1 ERROR" > output.txt; exit 0; }
 bash $SCRIPTS/create_mutated.sh
 
 status=0
-BUILD_DIR="$PWD/sim" python -m verif.smoke.run "$PWD/mutated.v" > sim.out || status=$?
+python -m verif.run smoke --replace verif/smoke/uart_tx.v="$PWD/mutated.v" --build-dir "$PWD/sim" > sim.out || status=$?
 
 if [ "$status" -eq 0 ]; then
 	echo "1 PASS" > output.txt

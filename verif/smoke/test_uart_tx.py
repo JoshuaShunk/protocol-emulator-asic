@@ -9,13 +9,14 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, RisingEdge, Timer
 from cocotbext.uart import UartSink
 
-from verif.lib import sigrok
+from verif.lib import sigrok, timing
 from verif.lib.probe import Probe, bit
 
 CLK_NS = 20
 CLKS_PER_BIT = int(os.environ.get("CLKS_PER_BIT", "8"))
 BAUD = 1_000_000_000 // (CLK_NS * CLKS_PER_BIT)
 OUT_DIR = Path(os.environ.get("PROBE_DIR", "."))
+TIMEOUT_US = 1000
 
 
 async def reset(dut):
@@ -53,18 +54,21 @@ async def run_and_check(dut, payload, name):
     got_model = bytes(sink.read_nowait(sink.count()))
     assert got_model == bytes(payload), f"cocotbext-uart: {got_model.hex()} != {bytes(payload).hex()}"
 
+    frames = timing.check_frames(probe.events, "uart_tx", CLKS_PER_BIT * CLK_NS, frame_units=10)
+    assert frames == len(payload), f"{frames} frames on the line, {len(payload)} sent"
+
     vcd = probe.write_vcd(OUT_DIR / f"{name}.vcd")
     decoded = sigrok.uart(vcd, "uart_tx", BAUD).check()
     got_sigrok = bytes(int(v, 16) for v in decoded.values())
     assert got_sigrok == bytes(payload), f"sigrok: {got_sigrok.hex()} != {bytes(payload).hex()}"
 
 
-@cocotb.test()
+@cocotb.test(timeout_time=TIMEOUT_US, timeout_unit="us")
 async def test_edge_bytes(dut):
     await run_and_check(dut, [0x00, 0xFF, 0x55, 0xAA, 0x01, 0x80], "edge_bytes")
 
 
-@cocotb.test()
+@cocotb.test(timeout_time=TIMEOUT_US, timeout_unit="us")
 async def test_random_bytes(dut):
     rng = random.Random(int(os.environ.get("SEED", "1")))
     await run_and_check(dut, [rng.randrange(256) for _ in range(32)], "random_bytes")

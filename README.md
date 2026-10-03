@@ -4,7 +4,8 @@
 
 An open-source, programmable protocol emulator for the
 [Jane Street protocol emulator ASIC competition](https://blog.janestreet.com/protocol-emulator-asic-competition/),
-targeting IHP SG13CMOS5L through [Tiny Tapeout](https://tinytapeout.com) in a 6x4 tile allocation.
+targeting IHP SG13CMOS5L through [Tiny Tapeout](https://tinytapeout.com) in an 8x4 tile allocation
+(with a 6x4 configuration while 8x4 is unconfirmed).
 
 Status: infrastructure only. The architecture is being specified in
 [docs/spec/architecture.md](docs/spec/architecture.md); `src/project.v` is still the template placeholder.
@@ -17,7 +18,7 @@ Status: infrastructure only. The architecture is being specified in
 ## Development setup (macOS)
 
 Tools: [OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build) in `~/opt/oss-cad-suite`,
-and from Homebrew `sigrok-cli`, `icarus-verilog`, `uv`, `libpng qhull cairo`.
+and from Homebrew `sigrok-cli`, `icarus-verilog`, `uv`. Hardening also needs Docker.
 
 ```sh
 uv venv --python 3.11 .venv
@@ -33,16 +34,19 @@ python verif/preflight.py          # checks simulator, cocotb and sigrok version
 
 ```sh
 source env.sh
+python -m pytest -q verif/lib                                           # checker unit tests
+python -m verif.run                                                    # all simulation suites
 (cd test && make -B && python ../verif/check_results.py results.xml)   # template test
-python -m verif.smoke.run                                              # harness self-test
-(cd verif/smoke/formal && sby -f uart_tx.sby)                         # harness formal self-test
-./verif/smoke/mutation/run.sh                                          # harness mutation self-test
+(cd verif/smoke/formal && sby -f uart_tx.sby)                         # formal self-test
+./verif/smoke/mutation/run.sh                                          # mutation self-test
 ```
 
 ## Hardening locally
 
-Matches the CMOS5L CI action (tt-support-tools `ihp-sg13cmos5l`, IHP-Open-PDK `2bbec755`,
-LibreLane 3.1.0.dev3). Requires Docker.
+Uses the same versions as the CMOS5L CI action (tt-support-tools `ihp-sg13cmos5l`,
+IHP-Open-PDK `2bbec755`, LibreLane 3.1.0.dev3). The flow runs in a Docker container
+that mounts only this repository and the PDK (read-only). The image is built from
+`tools/docker/Dockerfile` by the setup script.
 
 ```sh
 ./tools/setup_harden.sh

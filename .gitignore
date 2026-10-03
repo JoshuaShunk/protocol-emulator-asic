@@ -26,3 +26,7 @@ harden.log
 test/make.log
 verif/smoke/run.log
 verif/smoke/formal/sby.log
+docker-build.log
+sim_build/
+.pytest_cache/
+__pycache__/
